@@ -1,109 +1,69 @@
-# AI Financial Advisor Chatbot
+# AI Financial Advisor 📈🤖
 
-A full-stack AI chatbot for financial advice.
-Stack: Python Flask (AI engine) + Node.js Express (API) + HTML/CSS/JS (frontend)
+A premium, intelligent financial advisor built with a **Hybrid RAG (Retrieval-Augmented Generation) architecture**. This system goes beyond simple chat by analyzing your financial documents (CSV/PDF) and learning from your corrections in real-time.
 
----
+## ✨ Key Features
 
-## QUICK START — 3 steps
+- **📄 Document Intelligence (RAG):** Upload CSV financial reports or PDF statements. The system chunks the data and uses keyword-based retrieval to provide grounded, non-hallucinated answers.
+- **🎯 Hybrid NLP Layer:** Detects specific financial intents (Investment, Savings, Risk, Analysis) and extracts entities like currency amounts.
+- **🧠 Self-Learning Memory:** Recognizes when you correct its mistakes (e.g., "Actually, that's wrong...") and stores those corrections to avoid repeating errors in the same session.
+- **⚡ Ultra-Fast Responses:** Powered by **Llama 3.3 (70B)** via Groq for near-instant, high-quality financial reasoning.
+- **🛡️ Secure & Grounded:** Strict system prompts prevent the AI from inventing data. It explicitly prioritizes your uploaded documents over general knowledge.
+- **⏱️ Session Management:** Includes a rolling 20-message memory window and a configurable 20-request limit per session.
 
-### Step 1 — Add your HuggingFace API key
+## 🛠️ Tech Stack
 
-Open `backend/.env` (copy from `.env.example`) and paste your key:
+- **Frontend:** Vanilla HTML5, CSS3 (Modern Glassmorphism Design), and JavaScript.
+- **Backend:** Node.js & Express.
+- **AI/LLM:** Groq Cloud API (Llama 3.3 70B).
+- **Parsers:** `pdf-parse` for document extraction and `csv-parse` for financial data processing.
+- **File Handling:** `multer` for secure temporary file uploads.
 
-```
-HF_API_KEY=hf_your_token_here
-```
+## 🚀 Getting Started
 
-Get a free key at: https://huggingface.co/settings/tokens
+### 1. Prerequisites
+- Node.js (v18+)
+- A [Groq API Key](https://console.groq.com/)
 
----
-
-### Step 2 — Start the Python AI service (Terminal 1)
-
+### 2. Installation
 ```bash
-cd python-ai
-pip install -r requirements.txt
-python app.py
-```
+# Clone the repository
+git clone https://github.com/Fazal-dev/AI-Financial-Advisor.git
+cd AI-Financial-Advisor
 
-Runs on: http://localhost:5001
-
----
-
-### Step 3 — Start the Node.js backend (Terminal 2)
-
-```bash
+# Install backend dependencies
 cd backend
 npm install
-node server.js
 ```
 
-Then open: http://localhost:5000
-
----
-
-## Project Structure
-
-```
-AI-Financial-Advisor-Chatbot/
-├── frontend/
-│   ├── index.html       ← UI (auto-served by Node)
-│   ├── style.css
-│   └── script.js
-├── backend/
-│   ├── server.js        ← Express server (port 5000)
-│   ├── .env.example     ← Copy to .env, add HF key
-│   ├── routes/
-│   │   └── chatRoutes.js
-│   ├── controllers/
-│   │   └── chatController.js
-│   └── services/
-│       ├── hfService.js      ← HuggingFace Mistral AI
-│       ├── nlpService.js     ← Intent detection + fallback
-│       ├── decisionService.js← Response builder
-│       └── pythonService.js  ← Calls Python for risk/ROI
-├── python-ai/
-│   ├── app.py           ← Flask risk analyzer (port 5001)
-│   └── requirements.txt
-└── README.md
+### 3. Configuration
+Create a `.env` file in the `backend` folder:
+```env
+PORT=5000
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
----
-
-## How It Works
-
+### 4. Run the Project
+```bash
+# Start the backend (with nodemon)
+npm run dev
 ```
-User types → frontend/script.js
-           → POST /api/chat (Node port 5000)
-           → nlpService (detect intent)
-           → hfService (HuggingFace Mistral AI)
-           → decisionService (build reply)
-           → pythonService (risk/ROI calc, port 5001)
-           → Response back to frontend
+Open your browser and navigate to `http://localhost:5000`.
+
+## 📂 Project Structure
+
+```text
+├── backend
+│   ├── controllers/    # Request logic & RAG orchestration
+│   ├── routes/         # API endpoints & File upload config
+│   ├── services/       # RAG, NLP, Memory, and AI logic
+│   └── server.js       # Entry point
+├── frontend
+│   ├── index.html      # Modern chat UI
+│   ├── style.css       # Premium styling & animations
+│   └── script.js       # Frontend state & API calls
+└── python-ai/          # (Optional) Analytical scripts
 ```
 
----
-
-## Features
-
-- Financial Q&A powered by Mistral-7B (free HuggingFace)
-- Investment risk analysis (Python Flask)
-- ROI calculation
-- CSV/TXT report upload and analysis
-- Quick-ask chips for common questions
-- Local knowledge base fallback (works even if HF is down)
-- Dark mode support
-- Mobile responsive
-
----
-
-## Troubleshooting
-
-| Problem | Fix |
-|---------|-----|
-| "Cannot connect to server" | Make sure `node server.js` is running |
-| "Python service failed" | Make sure `python app.py` is running |
-| "invalid x-api-key" | Add HF_API_KEY to backend/.env |
-| Model loading slowly | HuggingFace cold start — wait 20-30 sec, then retry |
-| Port 5000 in use | Change PORT in .env |
+## ⚠️ Disclaimer
+This application is for **informational and educational purposes only**. It does not constitute professional financial advice. Always consult with a certified financial planner for significant financial decisions.
