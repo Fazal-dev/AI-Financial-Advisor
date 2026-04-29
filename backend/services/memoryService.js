@@ -5,16 +5,15 @@
 
 const sessions = {};
 
-const MAX_HISTORY = 20; // max messages kept per session
-const MAX_REQUESTS = 20; // 🛑 limit per session
+const MAX_HISTORY = 20; 
+const MAX_REQUESTS = 20; 
 
-// ─── GET / INIT SESSION ───────────────────────────────────────────────────────
 exports.getSession = (sessionId) => {
   if (!sessions[sessionId]) {
     sessions[sessionId] = {
       history: [],
       requestCount: 0,
-      mistakes: [],          // Stores user corrections/mistakes
+      mistakes: [],          
       lastIntent: null,
       lastAmount: null,
       documentContext: null,
@@ -34,29 +33,25 @@ exports.isLimitReached = (sessionId) => {
   return session.requestCount >= MAX_REQUESTS;
 };
 
-// ─── ADD A SINGLE MESSAGE ─────────────────────────────────────────────────────
+
 exports.addMessage = (sessionId, role, content) => {
   const session = exports.getSession(sessionId);
   session.history.push({ role, content });
-
-  // Rolling window — keep last MAX_HISTORY messages
   if (session.history.length > MAX_HISTORY) {
     session.history = session.history.slice(session.history.length - MAX_HISTORY);
   }
 };
 
-// ─── STORE RAG DOCUMENT CONTEXT ───────────────────────────────────────────────
+
 exports.setDocumentContext = (sessionId, context) => {
   const session = exports.getSession(sessionId);
   session.documentContext = context;
 };
 
-// ─── GET DOCUMENT CONTEXT ─────────────────────────────────────────────────────
 exports.getDocumentContext = (sessionId) => {
   return exports.getSession(sessionId).documentContext || null;
 };
 
-// ─── LEGACY UPDATE (keep compatibility) ───────────────────────────────────────
 exports.updateSession = (sessionId, data) => {
   const session = exports.getSession(sessionId);
   if (data.intent) session.lastIntent = data.intent;
@@ -66,19 +61,19 @@ exports.updateSession = (sessionId, data) => {
 exports.addMistake = (sessionId, userCorrection) => {
   const session = exports.getSession(sessionId);
   session.mistakes.push(userCorrection);
-  if (session.mistakes.length > 5) session.mistakes.shift(); // keep last 5
+  if (session.mistakes.length > 5) session.mistakes.shift(); 
 };
 
 exports.getMistakes = (sessionId) => {
   return exports.getSession(sessionId).mistakes || [];
 };
 
-// ─── GET FORMATTED HISTORY FOR LLM ───────────────────────────────────────────
+
 exports.getHistory = (sessionId) => {
   return exports.getSession(sessionId).history;
 };
 
-// ─── CLEAR SESSION ────────────────────────────────────────────────────────────
+
 exports.clearSession = (sessionId) => {
   delete sessions[sessionId];
 };
