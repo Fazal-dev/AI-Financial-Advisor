@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Financial Advisor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="chat-container">
+
+  <div class="chat-header">
+    <div class="header-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+        <polyline points="16 7 22 7 22 13"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>AI Financial Advisor</h1>
+      <p>Powered by stack Masters·</p>
+    </div>
+    <div class="header-status"><span class="dot"></span>Online</div>
+  </div>
+
+  <div id="chat-box" class="chat-box"></div>
+
+  <div class="quick-chips">
+    <button class="chip" onclick="quickSend('Can I invest 200000?')">Invest LKR 200,000?</button>
+    <button class="chip" onclick="quickSend('What is my risk level?')">My risk level</button>
+    <button class="chip" onclick="quickSend('What is the 50/30/20 budgeting rule?')">50/30/20 rule</button>
+    <button class="chip" onclick="quickSend('How do I build an emergency fund?')">Emergency fund</button>
+    <button class="chip" onclick="quickSend('Explain inflation')">Inflation</button>
+  </div>
+
+  <div class="input-area">
+    <div class="input-box">
+      <textarea id="message" placeholder="Ask about investments, savings, budgeting..." rows="1" oninput="autoResize(this)"></textarea>
+      <button id="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="input-footer">
+      <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Upload report
+      </button>
+      <input type="file" id="file-input" accept=".csv,.txt" onchange="handleFile(event)" style="display:none">
+      <div id="file-pill"></div>
+    </div>
+  </div>
+
+  <p class="disclaimer">For informational purposes only.</p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
