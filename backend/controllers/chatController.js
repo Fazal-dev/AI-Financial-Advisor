@@ -48,6 +48,31 @@ exports.handleChat = async (req, res) => {
     const ragContext = memoryService.getDocumentContext(sessionId);
     const mistakes = memoryService.getMistakes(sessionId);
 
+    // ── STEP 4.5: Relevance Check ────────────────────────────────────────────
+    if (!ragContext && message.length > 3) {
+      const msgLower = message.toLowerCase();
+      const financeKeywords = [
+        "invest", "stock", "buy", "save", "budget", "risk", "finance", "money",
+        "bank", "tax", "loan", "debt", "credit", "fund", "market", "economy",
+        "crypto", "salary", "income", "expense", "wealth", "asset", "liability",
+        "interest", "dividend", "portfolio", "retirement", "pension", "cash",
+        "price", "cost", "pay", "capital", "roi", "insurance", "financial",
+        "dollar", "rupee", "lkr", "usd", "currency", "inflation", "mortgage"
+      ];
+      const greetings = ["hi", "hello", "hey", "how are you", "who are you", "what can you do", "thanks", "thank you"];
+      
+      const isRelevant = financeKeywords.some(kw => msgLower.includes(kw)) || 
+                         greetings.some(g => msgLower.includes(g)) ||
+                         nlpData.intent !== "general";
+
+      if (!isRelevant) {
+        const fallbackReply = "I am an AI Financial Advisor. Please keep your questions related to finance, budgeting, investing, or upload a financial document for me to analyze.";
+        memoryService.addMessage(sessionId, "user", message);
+        memoryService.addMessage(sessionId, "assistant", fallbackReply);
+        return res.json({ reply: fallbackReply });
+      }
+    }
+
     // ── STEP 5: AI Call with History + RAG + Mistakes ────────────────────────
     const reply = await askFinancialQuestion(message, history, ragContext, mistakes);
 
