@@ -171,7 +171,10 @@ async function clearChat() {
       body: JSON.stringify({ sessionId: SESSION_ID }),
     });
   } catch (_) {}
-  addMsg("Session cleared! How can I help you?", "bot");
+  addMsg(
+    "Hello! I'm your AI Financial Advisor. Ask me anything about budgeting, saving, investing, or upload a CSV/PDF financial report — I'll read it and answer questions from it.",
+    "bot"
+  );
 }
 
 // ─── KEY BINDINGS ─────────────────────────────────────────────────────────────

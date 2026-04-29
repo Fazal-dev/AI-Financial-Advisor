@@ -21,10 +21,11 @@ Rules to prevent hallucination:
  * @param {string} userMessage      - latest user question
  * @param {Array}  history          - [{role, content}, ...] full chat history
  * @param {string|null} ragContext  - relevant document chunks from ragService
+ * @param {Array}  mistakes         - list of previous mistakes reported by user
  */
-exports.askFinancialQuestion = async (userMessage, history = [], ragContext = null) => {
+exports.askFinancialQuestion = async (userMessage, history = [], ragContext = null, mistakes = []) => {
   try {
-    const result = await askGroq(userMessage, history, ragContext);
+    const result = await askGroq(userMessage, history, ragContext, mistakes);
     if (result) {
       console.log("🟢 GROQ SUCCESS");
       return result;
@@ -37,8 +38,15 @@ exports.askFinancialQuestion = async (userMessage, history = [], ragContext = nu
   }
 };
 
-async function askGroq(userMessage, history, ragContext) {
+// ─── GROQ CALL ────────────────────────────────────────────────────────────────
+async function askGroq(userMessage, history, ragContext, mistakes) {
+  // Build system prompt — inject RAG context if available
   let systemPrompt = BASE_SYSTEM;
+  
+  if (mistakes.length > 0) {
+    systemPrompt += `\n\n--- PREVIOUS USER CORRECTIONS (Learn from these) ---\nUser previously said: "${mistakes.join('", "')}"\nDo not repeat these mistakes.`;
+  }
+
   if (ragContext) {
     systemPrompt += `\n\n--- DOCUMENT CONTEXT (from uploaded file) ---\n${ragContext}\n--- END OF DOCUMENT CONTEXT ---\n\nUse the above document data to answer the user's question precisely.`;
   }

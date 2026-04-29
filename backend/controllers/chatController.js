@@ -1,6 +1,7 @@
 const memoryService = require("../services/memoryService");
 const { askFinancialQuestion } = require("../services/hfService");
 const { buildRagContext } = require("../services/ragService");
+const nlpService = require("../services/nlpService");
 const fs = require("fs");
 
 // ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
@@ -8,7 +9,7 @@ exports.handleChat = async (req, res) => {
   try {
     const message = (req.body.message || "").trim();
     const file = req.file;
-    const sessionId = req.body.sessionId || "user1"; // support multi-session later
+    const sessionId = req.body.sessionId || "user1";
 
     // ── STEP 1: Check request limit ──────────────────────────────────────────
     if (memoryService.isLimitReached(sessionId)) {
@@ -17,52 +18,38 @@ exports.handleChat = async (req, res) => {
       });
     }
 
-    // ── STEP 2: If a file was uploaded, parse it and store its RAG context ────
-    let fileNotice = null;
+    // ── STEP 2: NLP Intent Detection ─────────────────────────────────────────
+    const nlpData = await nlpService.processMessage(message);
+    console.log(`🎯 Detected Intent: ${nlpData.intent}`);
 
-    if (file) {
-      try {
-
-        // Build RAG context from the document
-        const ragContext = await buildRagContext(file.path, message || "summarize");
-
-        // Persist in session so follow-up questions can reference it
-        memoryService.setDocumentContext(sessionId, ragContext);
-
-        fileNotice = `📄 **${file.originalname}** uploaded and indexed. Ask me anything about it!`;
-
-        // Clean up temp file
-        fs.unlink(file.path, () => {});
-      } catch (parseErr) {
-        console.error("File parse error:", parseErr.message);
-        fs.unlink(file.path, () => {});
-        return res.status(400).json({
-          error: `Could not read the file: ${parseErr.message}`,
-        });
-      }
+    if (nlpData.intent === "correction") {
+      memoryService.addMistake(sessionId, message);
     }
 
-    // ── STEP 2: If there's no user message, just confirm the upload ──────────
+    // ── STEP 3: Handle File Upload ───────────────────────────────────────────
+    let fileNotice = null;
+    if (file) {
+      const ragContext = await buildRagContext(file.path, message || "summarize");
+      memoryService.setDocumentContext(sessionId, ragContext);
+      fileNotice = `📄 **${file.originalname}** uploaded. Ask me anything about it!`;
+      fs.unlink(file.path, () => {});
+    }
+
     if (!message) {
       if (fileNotice) {
-        // Still add the file notice as an assistant message in history
         memoryService.addMessage(sessionId, "assistant", fileNotice);
         return res.json({ reply: fileNotice });
       }
-      return res.status(400).json({ error: "No message or file provided." });
+      return res.status(400).json({ error: "No message provided." });
     }
 
-    // ── STEP 3: Retrieve conversation history ─────────────────────────────────
+    // ── STEP 4: Retrieve Data ────────────────────────────────────────────────
     const history = memoryService.getHistory(sessionId);
-
-    // ── STEP 4: Retrieve RAG context (from current upload or stored session) ──
     const ragContext = memoryService.getDocumentContext(sessionId);
+    const mistakes = memoryService.getMistakes(sessionId);
 
-    // ── STEP 5: Ask LLM with full history + RAG context ──────────────────────
-    console.log(`💬 [${sessionId}] User: ${message}`);
-    if (ragContext) console.log("📎 RAG context injected");
-
-    const reply = await askFinancialQuestion(message, history, ragContext);
+    // ── STEP 5: AI Call with History + RAG + Mistakes ────────────────────────
+    const reply = await askFinancialQuestion(message, history, ragContext, mistakes);
 
     if (!reply) {
       return res.status(502).json({

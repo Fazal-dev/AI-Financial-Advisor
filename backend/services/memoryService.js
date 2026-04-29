@@ -13,7 +13,8 @@ exports.getSession = (sessionId) => {
   if (!sessions[sessionId]) {
     sessions[sessionId] = {
       history: [],
-      requestCount: 0,       // Track total requests
+      requestCount: 0,
+      mistakes: [],          // Stores user corrections/mistakes
       lastIntent: null,
       lastAmount: null,
       documentContext: null,
@@ -60,6 +61,16 @@ exports.updateSession = (sessionId, data) => {
   const session = exports.getSession(sessionId);
   if (data.intent) session.lastIntent = data.intent;
   if (data.amount) session.lastAmount = data.amount;
+};
+
+exports.addMistake = (sessionId, userCorrection) => {
+  const session = exports.getSession(sessionId);
+  session.mistakes.push(userCorrection);
+  if (session.mistakes.length > 5) session.mistakes.shift(); // keep last 5
+};
+
+exports.getMistakes = (sessionId) => {
+  return exports.getSession(sessionId).mistakes || [];
 };
 
 // ─── GET FORMATTED HISTORY FOR LLM ───────────────────────────────────────────
