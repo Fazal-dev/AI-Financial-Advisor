@@ -44,6 +44,13 @@
   <div class="input-area">
     <div class="input-box">
       <textarea id="message" placeholder="Ask about investments, savings, or your uploaded document…" rows="1" oninput="autoResize(this)"></textarea>
+      <button id="mic-btn" onclick="toggleVoiceRecording()" title="Voice Typing">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </button>
       <button id="send-btn" onclick="sendMessage()">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"/>

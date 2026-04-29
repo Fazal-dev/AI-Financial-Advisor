@@ -44,8 +44,28 @@ function addMsg(text, role, isError) {
   time.className = "msg-time";
   time.textContent = getTime();
 
-  wrap.appendChild(bubble);
-  wrap.appendChild(time);
+  if (role === "bot" && !isError) {
+    const ttsBtn = document.createElement("button");
+    ttsBtn.className = "tts-btn";
+    ttsBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+    `;
+    ttsBtn.title = "Read aloud";
+    ttsBtn.onclick = () => speakText(text);
+    
+    const actionsWrap = document.createElement("div");
+    actionsWrap.className = "msg-actions";
+    actionsWrap.appendChild(time);
+    actionsWrap.appendChild(ttsBtn);
+    wrap.appendChild(bubble);
+    wrap.appendChild(actionsWrap);
+  } else {
+    wrap.appendChild(bubble);
+    wrap.appendChild(time);
+  }
   msg.appendChild(av);
   msg.appendChild(wrap);
   chatBox.appendChild(msg);
@@ -195,4 +215,109 @@ function quickSend(text) {
 function autoResize(textarea) {
   textarea.style.height = "auto";
   textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
+}
+
+// ─── VOICE TO TEXT ────────────────────────────────────────────────────────────
+const micBtn = document.getElementById("mic-btn");
+let recognition = null;
+let isRecording = false;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  let finalTranscript = '';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    micBtn.classList.add("recording");
+    finalTranscript = inputEl.value ? inputEl.value + ' ' : '';
+  };
+
+  recognition.onresult = (event) => {
+    let interimTranscript = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+    inputEl.value = finalTranscript + interimTranscript;
+    autoResize(inputEl);
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    micBtn.classList.remove("recording");
+  };
+
+  recognition.onerror = (event) => {
+    console.error("Speech recognition error", event.error);
+    isRecording = false;
+    micBtn.classList.remove("recording");
+  };
+}
+
+function toggleVoiceRecording() {
+  if (!recognition) {
+    alert("Voice typing is not supported in this browser. Please try Chrome or Edge.");
+    return;
+  }
+  
+  if (isRecording) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+
+// ─── TEXT TO SPEECH ───────────────────────────────────────────────────────────
+// Trigger voice loading so they are ready when the button is clicked
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+  };
+}
+
+function speakText(text) {
+  if (!('speechSynthesis' in window)) {
+    alert("Text-to-speech is not supported in this browser.");
+    return;
+  }
+  
+  window.speechSynthesis.cancel();
+  
+  const cleanText = text.replace(/\*\*/g, '').replace(/<[^>]*>?/gm, '');
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  utterance.lang = 'en-US';
+  
+  const voices = window.speechSynthesis.getVoices();
+  
+  // Prioritize popular female voices across different OS/browsers
+  const preferredNames = ['Google US English', 'Microsoft Zira', 'Google UK English Female', 'Samantha', 'Victoria'];
+  let selectedVoice = null;
+  
+  for (const name of preferredNames) {
+    selectedVoice = voices.find(v => v.name.includes(name));
+    if (selectedVoice) break;
+  }
+  
+  // Fallback to any voice explicitly labeled as 'Female'
+  if (!selectedVoice) {
+    selectedVoice = voices.find(v => v.lang.includes('en') && v.name.includes('Female'));
+  }
+  
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
+  
+  // Adjust pitch to make the voice sound slightly softer and more pleasant
+  utterance.pitch = 1.15;
+  utterance.rate = 1.0;
+  
+  window.speechSynthesis.speak(utterance);
 }
