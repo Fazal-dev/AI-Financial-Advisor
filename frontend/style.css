@@ -105,7 +105,6 @@ body {
 }
 
 .header-status {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -452,6 +451,70 @@ body {
   margin-left: 2px;
 }
 
+/* ─── TYPING BUBBLE ───────────────────────────────────────────── */
+.typing-bubble {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 14px !important;
+}
+
+.typing-bubble span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+  animation: typingBounce 1.2s infinite ease-in-out;
+}
+
+.typing-bubble .dot-2 { animation-delay: 0.2s; }
+.typing-bubble .dot-3 { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ─── DOC BADGE ───────────────────────────────────────────────── */
+.doc-badge {
+  font-size: 11px;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+/* ─── HEADER ACTIONS (badge + clear btn) ─────────────────────── */
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-btn {
+  font-size: 11px;
+  font-family: 'DM Sans', Arial, sans-serif;
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.clear-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* ─── DISCLAIMER ──────────────────────────────────────────────── */
 .disclaimer {
   text-align: center;
   font-size: 11px;

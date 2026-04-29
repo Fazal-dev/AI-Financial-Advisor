@@ -1,140 +1,80 @@
 const axios = require("axios");
 
-const HF_API_KEY =process.env.HF_API_KEY;
-const HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2";
-
-if (!process.env.HF_API_KEY) {
-  throw new Error("Missing HF_API_KEY");
+if (!process.env.GROQ_API_KEY) {
+  throw new Error("Missing GROQ_API_KEY in environment");
 }
 
-const SYSTEM = `You are a professional AI Financial Advisor.
-Answer clearly in 2-8 sentences.
-Provide practical financial advice (budgeting, saving, investing, debt).
-If given financial data, summarize insights and give recommendations.
-Be concise, helpful, and human-like.`;
+// ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
+const BASE_SYSTEM = `You are a professional AI Financial Advisor.
+Your role is to give clear, grounded, and practical financial advice.
 
-// 🔁 retry helper
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+Rules to prevent hallucination:
+- ONLY use facts from the conversation history or the provided document context.
+- If you are not sure about a specific number or fact, say so clearly.
+- Never invent financial data, account balances, or statistics.
+- If a document was uploaded, base your answer on that document's data.
+- If no document is provided, give general financial education only.
+- Be concise (2-8 sentences), human-like, and actionable.`;
 
-exports.askFinancialQuestionOIld = async (message, context = "") => {
-  const prompt = `<s>[INST] ${SYSTEM} ${context ? `Context:\n${context}\n\n` : ""}User: ${message} [/INST]`;
-
+// ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
+/**
+ * @param {string} userMessage      - latest user question
+ * @param {Array}  history          - [{role, content}, ...] full chat history
+ * @param {string|null} ragContext  - relevant document chunks from ragService
+ */
+exports.askFinancialQuestion = async (userMessage, history = [], ragContext = null) => {
   try {
-    console.log("🔵 Sending request to HF...");
-
-    const response = await axios.post(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
-      {
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 3000,
-          temperature: 0.7,
-          return_full_text: false,
-        },
-        options: {
-          wait_for_model: true,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 30000,
-      },
-    );
-
-    // 🔥 HANDLE HF ERRORS
-    if (response.data?.error) {
-      console.log("❌ HF ERROR:", response.data.error);
-
-      // model loading case → retry once
-      if (response.data.error.includes("loading")) {
-        console.log("⏳ Retrying after model load...");
-        await sleep(5000);
-        return exports.askFinancialQuestion(message, context);
-      }
-
-      return null;
+    const result = await askGroq(userMessage, history, ragContext);
+    if (result) {
+      console.log("🟢 GROQ SUCCESS");
+      return result;
     }
-
-    let text = "";
-
-    if (Array.isArray(response.data) && response.data[0]?.generated_text) {
-      text = response.data[0].generated_text;
-    } else if (response.data?.generated_text) {
-      text = response.data.generated_text;
-    }
-
-    if (!text || text.length < 5) {
-      console.log("⚠️ Empty AI response");
-      return null;
-    }
-
-    // 🔥 CLEAN RESPONSE
-    text = text
-      .replace(/\[INST\].*?\[\/INST\]/gs, "")
-      .replace(/<s>|<\/s>/g, "")
-      .trim();
-
-    console.log("🟢 HF SUCCESS");
-
-    return text;
-  } catch (error) {
-    console.log("❌ HF REQUEST FAILED:");
-
-    if (error.response) {
-      console.log("Status:", error.response.status);
-      console.log("Data:", error.response.data);
-    } else {
-      console.log("Message:", error.message);
-    }
-
+    console.log("⚠️ Groq returned empty response");
+    return null;
+  } catch (err) {
+    console.error("❌ askFinancialQuestion error:", err.message);
     return null;
   }
 };
 
-exports.askFinancialQuestion = async (message, context = "") => {
-  const fullMessage = context ? `Context:\n${context}\n\n${message}` : message;
-
-  // Try Groq first (free + fast)
-  const groqResult = await askGroq(fullMessage);
-  if (groqResult) {
-    console.log("🟢 GROQ SUCCESS");
-    return groqResult;
+async function askGroq(userMessage, history, ragContext) {
+  let systemPrompt = BASE_SYSTEM;
+  if (ragContext) {
+    systemPrompt += `\n\n--- DOCUMENT CONTEXT (from uploaded file) ---\n${ragContext}\n--- END OF DOCUMENT CONTEXT ---\n\nUse the above document data to answer the user's question precisely.`;
   }
 
-  console.log("⚠️ Groq failed, no fallback available");
-  return null;
-};
+  // Build message array: system → full history → current user message
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...history,                                     
+    { role: "user", content: userMessage },          
+  ];
 
-async function askGroq(message) {
   try {
     const res = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: message },
-        ],
-        temperature: 0.7,
+        messages,
+        temperature: 0.4,  
+        max_tokens: 1024,
+        top_p: 0.9,
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           "Content-Type": "application/json",
         },
-      },
+        timeout: 30000,
+      }
     );
 
-    return res.data?.choices?.[0]?.message?.content || null;
+    return res.data?.choices?.[0]?.message?.content?.trim() || null;
   } catch (err) {
-    console.log("Groq failed");
-    console.log(
-      "Groq failed:",
+    console.error(
+      "Groq API error:",
       err.response?.status,
-      JSON.stringify(err.response?.data),
+      JSON.stringify(err.response?.data)
     );
     return null;
   }
